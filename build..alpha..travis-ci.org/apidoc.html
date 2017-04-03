@@ -1,0 +1,403 @@
+<div class="apidocDiv">
+<style>
+/*csslint
+*/
+.apidocDiv {
+    background: #fff;
+    font-family: Arial, Helvetica, sans-serif;
+}
+.apidocDiv a[href] {
+    color: #33f;
+    font-weight: bold;
+    text-decoration: none;
+}
+.apidocDiv a[href]:hover {
+    text-decoration: underline;
+}
+.apidocCodeCommentSpan {
+    background: #bbf;
+    color: #000;
+    display: block;
+}
+.apidocCodeKeywordSpan {
+    color: #d00;
+    font-weight: bold;
+}
+.apidocCodePre {
+    background: #eef;
+    border: 1px solid;
+    color: #777;
+    padding: 5px;
+    white-space: pre-wrap;
+}
+.apidocFooterDiv {
+    margin-top: 20px;
+    text-align: center;
+}
+.apidocModuleLi {
+    margin-top: 10px;
+}
+.apidocSectionDiv {
+    border-top: 1px solid;
+    margin-top: 20px;
+}
+.apidocSignatureSpan {
+    color: #777;
+    font-weight: bold;
+}
+</style>
+<h1>api documentation for
+    <a
+
+        href="https://github.com/reworkcss/css#readme"
+
+    >css (v2.2.1)</a>
+</h1>
+<h4>CSS parser / stringifier</h4>
+<div class="apidocSectionDiv"><a
+    href="#apidoc.tableOfContents"
+    id="apidoc.tableOfContents"
+><h1>table of contents</h1></a><ol>
+
+    <li class="apidocModuleLi"><a href="#apidoc.module.css">module css</a><ol>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.css.parse">
+            function <span class="apidocSignatureSpan">css.</span>parse
+            <span class="apidocSignatureSpan">(css, options)</span>
+            </a>
+
+        </li>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.css.stringify">
+            function <span class="apidocSignatureSpan">css.</span>stringify
+            <span class="apidocSignatureSpan">(node, options)</span>
+            </a>
+
+        </li>
+
+    </ol></li>
+
+</ol></div>
+
+<div class="apidocSectionDiv">
+<h1><a href="#apidoc.module.css" id="apidoc.module.css">module css</a></h1>
+
+
+    <h2>
+        <a href="#apidoc.element.css.parse" id="apidoc.element.css.parse">
+        function <span class="apidocSignatureSpan">css.</span>parse
+        <span class="apidocSignatureSpan">(css, options)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">parse = function (css, options){
+  options = options || {};
+
+<span class="apidocCodeCommentSpan">  /**
+   * Positional.
+   */
+</span>
+  var lineno = 1;
+  var column = 1;
+
+  /**
+   * Update lineno and column based on `str`.
+   */
+
+  function updatePosition(str) {
+    var lines = str.match(/\n/g);
+    if (lines) lineno += lines.length;
+    var i = str.lastIndexOf(&#x27;\n&#x27;);
+    column = ~i ? str.length - i : column + str.length;
+  }
+
+  /**
+   * Mark position and patch `node.position`.
+   */
+
+  function position() {
+    var start = { line: lineno, column: column };
+    return function(node){
+      node.position = new Position(start);
+      whitespace();
+      return node;
+    };
+  }
+
+  /**
+   * Store position information for a node
+   */
+
+  function Position(start) {
+    this.start = start;
+    this.end = { line: lineno, column: column };
+    this.source = options.source;
+  }
+
+  /**
+   * Non-enumerable source string
+   */
+
+  Position.prototype.content = css;
+
+  /**
+   * Error `msg`.
+   */
+
+  var errorsList = [];
+
+  function error(msg) {
+    var err = new Error(options.source + &#x27;:&#x27; + lineno + &#x27;:&#x27; + column + &#x27;: &#x27; + msg);
+    err.reason = msg;
+    err.filename = options.source;
+    err.line = lineno;
+    err.column = column;
+    err.source = css;
+
+    if (options.silent) {
+      errorsList.push(err);
+    } else {
+      throw err;
+    }
+  }
+
+  /**
+   * Parse stylesheet.
+   */
+
+  function stylesheet() {
+    var rulesList = rules();
+
+    return {
+      type: &#x27;stylesheet&#x27;,
+      stylesheet: {
+        rules: rulesList,
+        parsingErrors: errorsList
+      }
+    };
+  }
+
+  /**
+   * Opening brace.
+   */
+
+  function open() {
+    return match(/^{\s*/);
+  }
+
+  /**
+   * Closing brace.
+   */
+
+  function close() {
+    return match(/^}/);
+  }
+
+  /**
+   * Parse ruleset.
+   */
+
+  function rules() {
+    var node;
+    var rules = [];
+    whitespace();
+    comments(rules);
+    while (css.length &#x26;&#x26; css.charAt(0) != &#x27;}&#x27; &#x26;&#x26; (node = atrule() || rule())) {
+      if (node !== false) {
+        rules.push(node);
+        comments(rules);
+      }
+    }
+    return rules;
+  }
+
+  /**
+   * Match `re` and return captures.
+   */
+
+  function match(re) {
+    var m = re.exec(css);
+    if (!m) return;
+    var str = m[0];
+    updatePosition(str);
+    css = css.slice(str.length);
+    return m;
+  }
+
+  /**
+   * Parse whitespace.
+   */
+
+  function whitespace() {
+    match(/^\s*/);
+  }
+
+  /**
+   * Parse comments;
+   */
+
+  function comments(rules) {
+    var c;
+    rules = rules || [];
+    while (c = comment()) {
+      if (c !== false) {
+        rules.push(c);
+      }
+    }
+    return rules;
+  }
+
+  /**
+   * Parse comment.
+   */
+
+  function comment() {
+    var pos = position();
+    if (&#x27;/&#x27; != css.charAt(0) || &#x27;*&#x27; != css.charAt(1)) return;
+
+    var i = 2;
+    while (&#x22;&#x22; != css.charAt(i) &#x26;&#x26; (&#x27;*&#x27; != css.charAt(i) || &#x27;/&#x27; != css.charAt(i + 1))) ++i;
+    i += 2;
+
+    if (&#x22;&#x22; === css.charAt(i-1)) {
+      return error(&#x27;End of comment missing&#x27;);
+    }
+
+    var str = css.slice(2, i - 2);
+    column += 2;
+    updatePosition(str);
+    css = css.slice(i);
+    column += 2;
+
+    return pos({
+      type: &#x27;comment&#x27;,
+      comment: str
+    });
+  }
+
+  /**
+   * Parse selector.
+   */
+
+  function selector() {
+    var m = match(/^([^{]+)/);
+    if (!m) return;
+    /* @fix Remove all comments from selectors
+     * http://ostermiller.org/findcomment.html */
+    return trim(m[0])
+      .replace(/\/\*([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\*\/+/g, &#x27;&#x27;)
+      .replace(/&#x22;(?:\\&#x22;|[^&#x22;])*&#x22;|&#x27;(?:\\&#x27;|[^&#x27;])*&#x27;/g, function(m) {
+        return m.replace(/,/g, &#x27;\u200C&#x27;);
+      })
+      .split(/\s*(?![^(]*\)),\s*/)
+      .map(function(s) {
+        return s.replace(/\u200C/g, &#x27;,&#x27;);
+      });
+  }
+
+  /**
+   * Parse declaration.
+   */
+
+  function declaration() {
+    var pos = position();
+
+    // prop
+    var prop = match(/^(\*?[-#\/\*\\\w]+(\[[0-9a-z_-]+\])?)\s*/);
+    if (!prop) return;
+    prop = trim(prop[0]);
+
+    // :
+    if (!match(/^:\s*/)) return error(&#x22;property missing &#x27;:&#x27;&#x22;);
+
+    // val
+    var val = match(/^((?:&#x27;(?:\\&#x27;|.)*?&#x27;|&#x22;(?:\\&#x22;|.)*?&#x22;|\([^\)]*?\)|[^};])+)/);
+
+    var ret = pos({
+      type: &#x27;declaration&#x27;,
+      property: prop.replace(commentre, &#x27;&#x27;),
+      value: v ...</pre></li>
+    <li>example usage<pre class="apidocCodePre">...
+
+    $ npm install css
+
+## Usage
+
+```js
+var css = require(&#x27;css&#x27;);
+var obj = css.<span class="apidocCodeKeywordSpan">parse</span>(&#x27;body { font-size: 12px; }&#x27;, options);
+css.stringify(obj, options);
+```
+
+## API
+
+### css.parse(code, [options])
+...</pre></li>
+    </ul>
+
+
+
+    <h2>
+        <a href="#apidoc.element.css.stringify" id="apidoc.element.css.stringify">
+        function <span class="apidocSignatureSpan">css.</span>stringify
+        <span class="apidocSignatureSpan">(node, options)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">stringify = function (node, options){
+  options = options || {};
+
+  var compiler = options.compress
+    ? new Compressed(options)
+    : new Identity(options);
+
+  // source maps
+  if (options.sourcemap) {
+    var sourcemaps = require(&#x27;./source-map-support&#x27;);
+    sourcemaps(compiler);
+
+    var code = compiler.compile(node);
+    compiler.applySourceMaps();
+
+    var map = options.sourcemap === &#x27;generator&#x27;
+      ? compiler.map
+      : compiler.map.toJSON();
+
+    return { code: code, map: map };
+  }
+
+  var code = compiler.compile(node);
+  return code;
+}</pre></li>
+    <li>example usage<pre class="apidocCodePre">...
+    $ npm install css
+
+## Usage
+
+```js
+var css = require(&#x27;css&#x27;);
+var obj = css.parse(&#x27;body { font-size: 12px; }&#x27;, options);
+css.<span class="apidocCodeKeywordSpan">stringify</span>(obj, options);
+```
+
+## API
+
+### css.parse(code, [options])
+
+Accepts a CSS string and returns an AST `object`.
+...</pre></li>
+    </ul>
+
+
+</div>
+
+<div class="apidocFooterDiv">
+    [ this document was created with
+    <a href="https://github.com/kaizhu256/node-utility2" target="_blank">utility2</a>
+    ]
+</div>
+</div>
