@@ -1,4 +1,7 @@
-# api documentation for  [css (v2.2.1)](https://github.com/reworkcss/css#readme)  [![npm package](https://img.shields.io/npm/v/npmdoc-css.svg?style=flat-square)](https://www.npmjs.org/package/npmdoc-css) [![travis-ci.org build-status](https://api.travis-ci.org/npmdoc/node-npmdoc-css.svg)](https://travis-ci.org/npmdoc/node-npmdoc-css)
+# npmdoc-css
+
+#### basic api documentation for  [css (v2.2.1)](https://github.com/reworkcss/css#readme)  [![npm package](https://img.shields.io/npm/v/npmdoc-css.svg?style=flat-square)](https://www.npmjs.org/package/npmdoc-css) [![travis-ci.org build-status](https://api.travis-ci.org/npmdoc/node-npmdoc-css.svg)](https://travis-ci.org/npmdoc/node-npmdoc-css)
+
 #### CSS parser / stringifier
 
 [![NPM](https://nodei.co/npm/css.png?downloads=true&downloadRank=true&stars=true)](https://www.npmjs.com/package/css)
@@ -101,7 +104,8 @@
         "benchmark": "matcha",
         "test": "mocha --require should --reporter spec --bail test/*.js"
     },
-    "version": "2.2.1"
+    "version": "2.2.1",
+    "bin": {}
 }
 ```
 
